@@ -1,0 +1,28 @@
+services:
+  # Your API Service
+  api:
+    build: .
+    container_name: article_extractor_api
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres_dev
+    environment:
+      # Tell the API to talk to the Docker database container, not localhost
+      - DATABASE_URL=postgresql://dev_user:dev_password@postgres_dev:5432/article_cache_db
+
+  # Your Database Service (Same as before)
+  postgres_dev:
+    image: postgres:15-alpine
+    container_name: article_db_dev
+    environment:
+      POSTGRES_USER: dev_user
+      POSTGRES_PASSWORD: dev_password
+      POSTGRES_DB: article_cache_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+volumes:
+  pg_data:
