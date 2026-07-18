@@ -31,19 +31,32 @@ jobs:
           tenant-id: ${{ secrets.ARTICLEEXTRACTORAPI_AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.ARTICLEEXTRACTORAPI_AZURE_SUBSCRIPTION_ID }}
 
-      - name: Build and push container image to registry
-        uses: azure/container-apps-deploy-action@v2
-        with:
-          appSourcePath: ${{ github.workspace }}
-          _dockerfilePathKey_: _dockerfilePath_
-          _targetLabelKey_: _targetLabel_
-          registryUrl: 
-          registryUsername: ${{ secrets.ARTICLEEXTRACTORAPI_REGISTRY_USERNAME }}
-          registryPassword: ${{ secrets.ARTICLEEXTRACTORAPI_REGISTRY_PASSWORD }}
-          containerAppName: article-extractor-api
-          resourceGroup: ExtractorAPI_RG
-          imageToBuild: default/[parameters('containerAppName')]:${{ github.sha }}
-          _buildArgumentsKey_: |
-            _buildArgumentsValues_
+      - name: Build, Push, and Deploy
+        run: |
+          # 1. Log into the registry
+          az acr login --name ca996c3a513facr
+          
+          # 2. Build the Docker image on GitHub's servers
+          docker build -t ca996c3a513facr.azurecr.io/article-extractor-api:${{ github.sha }} .
+          
+          # 3. Push the built image to Azure Container Registry
+          docker push ca996c3a513facr.azurecr.io/article-extractor-api:${{ github.sha }}
+          
+          # 4. Retrieve the registry admin password
+          ACR_PASSWORD=$(az acr credential show -n ca996c3a513facr --query "passwords[0].value" -o tsv)
+          
+          # 5. Link the Container App to the registry
+          az containerapp registry set \
+            --name article-extractor-api \
+            --resource-group ExtractorAPI_RG \
+            --server ca996c3a513facr.azurecr.io \
+            --username ca996c3a513facr \
+            --password $ACR_PASSWORD
+            
+          # 6. Deploy the new image to the Container App
+          az containerapp update \
+            --name article-extractor-api \
+            --resource-group ExtractorAPI_RG \
+            --image ca996c3a513facr.azurecr.io/article-extractor-api:${{ github.sha }}
 
 
