@@ -3,13 +3,9 @@ from sqlalchemy.orm import sessionmaker
 
 import os
 # Azure will provide the DATABASE_URL through Environment Variables
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://dev_user:dev_password@127.0.0.1:5433/article_cache_db")
+SQLALCHEMY_DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://user:pass@127.0.0.1:5433/db")
 
-# Update this to port 5433 if you had to change it earlier for Docker!
-#DATABASE_URL = "postgresql://dev_user:dev_password@127.0.0.1:5433/article_cache_db"
-
-# Create the engine
-engine = create_engine(DATABASE_URL, echo=True)
+engine = create_engine(SQLALCHEMY_DATABASE_URL)
 
 # Create a SessionLocal class. Each instance of this class will be a database session.
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
